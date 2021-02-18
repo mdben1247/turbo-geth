@@ -85,9 +85,9 @@ func executeBlockWithGo(block *types.Block, tx ethdb.DbWithPendingMutations, cac
 	if params.WriterBuilder != nil {
 		stateWriter = params.WriterBuilder(batch, tx, blockNum)
 	} else if cache == nil {
-		stateWriter = state.NewPlainStateWriter(batch, tx, blockNum)
+		stateWriter = state.NewPlainStateWriter(batch, batch, blockNum)
 	} else {
-		stateWriter = state.NewCachedWriter(state.NewChangeSetWriterPlain(tx, blockNum), cache)
+		stateWriter = state.NewCachedWriter(state.NewChangeSetWriterPlain(batch, blockNum), cache)
 	}
 
 	engine := chainContext.Engine()
@@ -99,7 +99,7 @@ func executeBlockWithGo(block *types.Block, tx ethdb.DbWithPendingMutations, cac
 	}
 
 	if params.WriteReceipts {
-		if err = rawdb.AppendReceipts(tx, blockNum, receipts); err != nil {
+		if err = rawdb.AppendReceipts(batch, blockNum, receipts); err != nil {
 			return err
 		}
 	}
