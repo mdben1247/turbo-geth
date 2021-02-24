@@ -8977,7 +8977,7 @@ no_loose:
         /* Stop reclaiming to avoid overflow the page list.
          * This is a rare case while search for a continuously multi-page region
          * in a large database. https://github.com/erthink/libmdbx/issues/123 */
-        mdbx_debug("stop reclaiming to avoid PNL overflow: %u (current) + %u "
+        mdbx_notice("stop reclaiming to avoid PNL overflow: %u (current) + %u "
                    "(chunk) -> %u",
                    MDBX_PNL_SIZE(txn->tw.reclaimed_pglist), gc_len,
                    gc_len + MDBX_PNL_SIZE(txn->tw.reclaimed_pglist));
