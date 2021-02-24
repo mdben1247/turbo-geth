@@ -391,7 +391,6 @@ func loopExec(db ethdb.Database, ctx context.Context, unwind uint64) error {
 			stagedsync.ExecuteBlockStageParams{
 				ToBlock:               to, // limit execution to the specified block
 				WriteReceipts:         true,
-				CacheSize:             int(cacheSize),
 				BatchSize:             batchSize,
 				SilkwormExecutionFunc: silkwormExecutionFunc(),
 			}); err != nil {
