@@ -6332,7 +6332,6 @@ static MDBX_dpl *mdbx_dpl_reserve(MDBX_txn *txn, size_t size) {
   mdbx_tassert(txn,
                txn->tw.dirtylist == NULL || txn->tw.dirtylist->length <= size);
   size_t bytes = dpl2bytes((size < MDBX_PGL_LIMIT) ? size : MDBX_PGL_LIMIT);
-    mdbx_notice("mdbx_dpl_reserve: realloc %zu", size);
   MDBX_dpl *const dl = mdbx_realloc(txn->tw.dirtylist, bytes);
   if (likely(dl)) {
 #if __GLIBC_PREREQ(2, 12) || defined(__FreeBSD__) || defined(malloc_usable_size)
@@ -8348,7 +8347,6 @@ static __cold int mdbx_set_readahead(MDBX_env *env, const size_t offset,
               bytes2pgno(env, offset), bytes2pgno(env, offset + length));
 
 #if defined(F_RDAHEAD)
-  mdbx_notice("readahead: F_RDAHEAD branch %d", enable);
   if (unlikely(fcntl(env->me_lazy_fd, F_RDAHEAD, enable) == -1))
     return errno;
 #endif /* F_RDAHEAD */
@@ -8358,19 +8356,16 @@ static __cold int mdbx_set_readahead(MDBX_env *env, const size_t offset,
     struct radvisory hint;
     hint.ra_offset = offset;
     hint.ra_count = length;
-      mdbx_notice("readahead: F_RDADVISE enable branch %d", enable);
     (void)/* Ignore ENOTTY for DB on the ram-disk and so on */ fcntl(
         env->me_lazy_fd, F_RDADVISE, &hint);
 #endif /* F_RDADVISE */
 #if defined(MADV_WILLNEED)
-      mdbx_notice("readahead: MADV_WILLNEED enable branch %d", enable);
     int err = madvise(env->me_map + offset, length, MADV_WILLNEED)
                   ? ignore_enosys(errno)
                   : MDBX_SUCCESS;
     if (unlikely(MDBX_IS_ERROR(err)))
       return err;
 #elif defined(POSIX_MADV_WILLNEED)
-      mdbx_notice("readahead: POSIX_MADV_WILLNEED enable branch %d", enable);
     int err = ignore_enosys(
         posix_madvise(env->me_map + offset, length, POSIX_MADV_WILLNEED));
     if (unlikely(MDBX_IS_ERROR(err)))
@@ -8390,20 +8385,17 @@ static __cold int mdbx_set_readahead(MDBX_env *env, const size_t offset,
 #endif /* MADV_WILLNEED */
   } else {
 #if defined(MADV_RANDOM)
-      mdbx_notice("readahead: MADV_RANDOM branch %d", enable);
     int err = madvise(env->me_map + offset, length, MADV_RANDOM)
                   ? ignore_enosys(errno)
                   : MDBX_SUCCESS;
     if (unlikely(MDBX_IS_ERROR(err)))
       return err;
 #elif defined(POSIX_MADV_RANDOM)
-    mdbx_notice("readahead: POSIX_MADV_RANDOM branch %d", enable);
     int err = ignore_enosys(
         posix_madvise(env->me_map + offset, length, POSIX_MADV_RANDOM));
     if (unlikely(MDBX_IS_ERROR(err)))
       return err;
 #elif defined(POSIX_FADV_RANDOM)
-      mdbx_notice("readahead: POSIX_FADV_RANDOM branch %d", enable);
     int err = ignore_enosys(
         posix_fadvise(env->me_lazy_fd, offset, length, POSIX_FADV_RANDOM));
     if (unlikely(MDBX_IS_ERROR(err)))
@@ -8977,7 +8969,7 @@ no_loose:
         /* Stop reclaiming to avoid overflow the page list.
          * This is a rare case while search for a continuously multi-page region
          * in a large database. https://github.com/erthink/libmdbx/issues/123 */
-        mdbx_notice("stop reclaiming to avoid PNL overflow: %u (current) + %u "
+        mdbx_debug("stop reclaiming to avoid PNL overflow: %u (current) + %u "
                    "(chunk) -> %u",
                    MDBX_PNL_SIZE(txn->tw.reclaimed_pglist), gc_len,
                    gc_len + MDBX_PNL_SIZE(txn->tw.reclaimed_pglist));
@@ -14252,7 +14244,6 @@ static __cold int mdbx_setup_dxb(MDBX_env *env, const int lck_rc) {
 #if defined(MADV_DONTNEED)
     mdbx_notice("open-MADV_%s %u..%u", "DONTNEED", env->me_discarded_tail->weak,
                 bytes2pgno(env, env->me_dxb_mmap.current));
-    mdbx_notice("open-1-%u", MDBX_PGL_LIMIT);
     err =
         madvise(env->me_map + used_aligned2os_bytes,
                 env->me_dxb_mmap.current - used_aligned2os_bytes, MADV_DONTNEED)
@@ -14593,7 +14584,6 @@ __cold int mdbx_is_readahead_reasonable(size_t volume, intptr_t redundancy) {
 #else
 #error "FIXME: Get Available RAM"
 #endif
-  mdbx_notice("is_readahead_reasonable: avail_ram_pages=%ld", avail_ram_pages);
   if (avail_ram_pages < 1)
     return MDBX_ENOSYS;
 
