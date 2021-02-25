@@ -38,6 +38,15 @@ func Trie(tx ethdb.Tx, slowChecks bool, quit <-chan struct{}) {
 			if errc != nil {
 				panic(errc)
 			}
+
+			select {
+			default:
+			case <-quit:
+				return
+			case <-logEvery.C:
+				log.Info("trie account integrity", "key", fmt.Sprintf("%x", k))
+			}
+
 			hasState, hasTree, hasHash, hashes, _ := trie.UnmarshalTrieNode(v)
 			AssertSubset(k, hasTree, hasState)
 			AssertSubset(k, hasHash, hasState)
@@ -117,14 +126,6 @@ func Trie(tx ethdb.Tx, slowChecks bool, quit <-chan struct{}) {
 					panic(fmt.Errorf("key %x has state %016b, but there is no child %d,%x in state", k, hasState, i, seek))
 				}
 			}
-
-			select {
-			default:
-			case <-quit:
-				return
-			case <-logEvery.C:
-				log.Info("trie account integrity", "key", fmt.Sprintf("%x", k))
-			}
 		}
 	}
 	{
@@ -136,6 +137,13 @@ func Trie(tx ethdb.Tx, slowChecks bool, quit <-chan struct{}) {
 		for k, v, errc := c.First(); k != nil; k, v, errc = c.Next() {
 			if errc != nil {
 				panic(errc)
+			}
+			select {
+			default:
+			case <-quit:
+				return
+			case <-logEvery.C:
+				log.Info("trie storage integrity", "key", fmt.Sprintf("%x", k))
 			}
 
 			hasState, hasTree, hasHash, hashes, _ := trie.UnmarshalTrieNode(v)
@@ -217,14 +225,6 @@ func Trie(tx ethdb.Tx, slowChecks bool, quit <-chan struct{}) {
 				if !found {
 					panic(fmt.Errorf("key %x has state %016b, but there is no child %d,%x in state", k, hasState, i, seek))
 				}
-			}
-
-			select {
-			default:
-			case <-quit:
-				return
-			case <-logEvery.C:
-				log.Info("trie storage integrity", "key", fmt.Sprintf("%x", k))
 			}
 		}
 	}
